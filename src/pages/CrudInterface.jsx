@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,11 +11,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { addRecord, updateRecord, deleteRecord } from "@/api/crudApi";
 
 const CrudInterface = () => {
   const [records, setRecords] = useState([]);
   const [formData, setFormData] = useState({ name: "", email: "" });
   const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => {
+    // In a real application, you would fetch initial data here
+    // For now, we'll use some mock data
+    setRecords([
+      { id: 1, name: "John Doe", email: "john@example.com" },
+      { id: 2, name: "Jane Smith", email: "jane@example.com" },
+    ]);
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -25,24 +35,23 @@ const CrudInterface = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // In a real application, you would send this data to your Zapier webhook
-      // For now, we'll just update the local state
       if (editingId !== null) {
+        const updatedRecord = await updateRecord({ ...formData, id: editingId });
         setRecords((prev) =>
           prev.map((record) =>
-            record.id === editingId ? { ...formData, id: editingId } : record
+            record.id === editingId ? updatedRecord : record
           )
         );
         setEditingId(null);
         toast.success("Record updated successfully");
       } else {
-        const newRecord = { ...formData, id: Date.now() };
+        const newRecord = await addRecord(formData);
         setRecords((prev) => [...prev, newRecord]);
         toast.success("Record added successfully");
       }
       setFormData({ name: "", email: "" });
     } catch (error) {
-      toast.error("An error occurred");
+      toast.error(error.message);
     }
   };
 
@@ -53,12 +62,11 @@ const CrudInterface = () => {
 
   const handleDelete = async (id) => {
     try {
-      // In a real application, you would send a delete request to your Zapier webhook
-      // For now, we'll just update the local state
+      await deleteRecord(id);
       setRecords((prev) => prev.filter((record) => record.id !== id));
       toast.success("Record deleted successfully");
     } catch (error) {
-      toast.error("An error occurred");
+      toast.error(error.message);
     }
   };
 
